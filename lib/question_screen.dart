@@ -14,7 +14,7 @@ class QuestionScreenState extends State<QuestionScreen> {
   final logger = Logger('QuestionScreen');
   int currentPage = 0;
   List<Question> questions = [];
-  
+
   Map<String, String?> textResponses = {};
   Map<String, Map<String, String>> compositeResponses = {};
   Map<String, String?> singleResponses = {};
@@ -37,13 +37,13 @@ class QuestionScreenState extends State<QuestionScreen> {
         setState(() {
           questions = fetchedQuestions;
         });
-        logger.info('Questions fetched successfully: $questions');
+        logger.info('Questions fetched successfully: ${questions.length}');
       }
     } catch (error) {
       logger.severe('Error fetching questions: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $error')),
+          SnackBar(content: Text('Error fetching questions: $error')),
         );
       }
     }
@@ -79,126 +79,145 @@ class QuestionScreenState extends State<QuestionScreen> {
   }
 
   Widget buildQuestionWidget(Question question) {
-  switch (question.type) {
-    case 'text':
-      // General text input
-      return TextField(
-        decoration: InputDecoration(
-          labelText: question.description ?? question.question,
-          border: const OutlineInputBorder(),
-        ),
-        onChanged: (value) {
-          textResponses[question.question] = value;
-        },
-      );
+    final questionText = question.description ?? question.question;
 
-    case 'email':
-      // Email input with validation
-      return Column(
-        children: [
-          TextField(
-            controller: emailController,
-            decoration: InputDecoration(
-              labelText: question.description ?? question.question,
-              border: const OutlineInputBorder(),
-              errorText: isValidEmail ? null : 'Invalid email address',
+    if (questionText.isEmpty) {
+      return const Center(child: Text('No question available'));
+    }
+
+    switch (question.type) {
+      case 'text':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              questionText,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            onChanged: (value) {
-              setState(() {
-                isValidEmail = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$')
-                    .hasMatch(value);
-              });
-            },
+            const SizedBox(height: 10),
+            TextField(
+              decoration: const InputDecoration(
+                labelText: "Your response",
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                textResponses[question.question] = value;
+              },
+            ),
+          ],
+        );
+         case 'composite':
+      final subfields = question.subfields?.split(',').map((e) => e.trim()).toList() ?? [];
+      if (subfields.isEmpty) {
+        return const Text('No subfields defined for this question.');
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question.description ?? 'No description available',
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
+          const SizedBox(height: 10),
+          ...subfields.map((subfield) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: TextField(
+                decoration: InputDecoration(
+                  labelText: subfield,
+                  border: const OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  compositeResponses[question.question] ??= {};
+                  compositeResponses[question.question]![subfield] = value;
+                },
+              ),
+            );
+          }),
         ],
       );
-
-    case 'composite':
-      // Composite questions with multiple text fields for subfields
-      final subfields = question.subfields?.split(',') ?? [];
-      return Column(
-        children: subfields.map((subfield) {
-          return TextField(
-            decoration: InputDecoration(
-              labelText: subfield.trim(),
-              border: const OutlineInputBorder(),
+      case 'email':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              questionText,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            onChanged: (value) {
-              compositeResponses[question.question] ??= {};
-              compositeResponses[question.question]![subfield.trim()] = value;
-            },
-          );
-        }).toList(),
-      );
-
-    case 'single':
-      // Single-choice questions using RadioListTile
-      final options = question.options ?? [];
-      return Column(
-        children: options.map((option) {
-          return RadioListTile<String>(
-            title: Text(option),
-            value: option,
-            groupValue: singleResponses[question.question],
-            onChanged: (value) {
-              setState(() {
-                singleResponses[question.question] = value;
-              });
-            },
-          );
-        }).toList(),
-      );
-
-    case 'multiple':
-      // Multiple-choice questions using CheckboxListTile
-      final options = question.options ?? [];
-      return Column(
-        children: options.map((option) {
-          final isChecked = multipleResponses[question.question]?.contains(option) ?? false;
-          return CheckboxListTile(
-            title: Text(option),
-            value: isChecked,
-            onChanged: (value) {
-              setState(() {
-                if (value == true) {
-                  multipleResponses[question.question] ??= [];
-                  multipleResponses[question.question]!.add(option);
-                } else {
-                  multipleResponses[question.question]?.remove(option);
-                }
-              });
-            },
-          );
-        }).toList(),
-      );
-
-    case 'choice':
-      // Dropdown for choice-based questions
-      final options = question.options ?? [];
-      return DropdownButtonFormField<String>(
-        decoration: InputDecoration(
-          labelText: question.description ?? question.question,
-          border: const OutlineInputBorder(),
-        ),
-        value: singleResponses[question.question],
-        items: options.map((option) {
-          return DropdownMenuItem(
-            value: option,
-            child: Text(option),
-          );
-        }).toList(),
-        onChanged: (value) {
-          setState(() {
-            singleResponses[question.question] = value;
-          });
-        },
-      );
-
-    default:
-      return const Text('Unsupported question type');
+            const SizedBox(height: 10),
+            TextField(
+              controller: emailController,
+              decoration: InputDecoration(
+                labelText: "Email address",
+                border: const OutlineInputBorder(),
+                errorText: isValidEmail ? null : 'Invalid email address',
+              ),
+              onChanged: (value) {
+                setState(() {
+                  isValidEmail = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value);
+                });
+              },
+            ),
+          ],
+        );
+      case 'single':
+        final options = question.options?.map((e) => e.trim()).toList() ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              questionText,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ...options.map((option) {
+              return RadioListTile<String>(
+                title: Text(option),
+                value: option,
+                groupValue: singleResponses[question.question],
+                onChanged: (value) {
+                  setState(() {
+                    singleResponses[question.question] = value;
+                  });
+                },
+              );
+            }),
+          ],
+        );
+      case 'multiple':
+        final options = question.options?.map((e) => e.trim()).toList() ?? [];
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              questionText,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 10),
+            ...options.map((option) {
+              final isChecked =
+                  multipleResponses[question.question]?.contains(option) ?? false;
+              return CheckboxListTile(
+                title: Text(option),
+                value: isChecked,
+                onChanged: (value) {
+                  setState(() {
+                    if (value == true) {
+                      multipleResponses[question.question] ??= [];
+                      multipleResponses[question.question]!.add(option);
+                    } else {
+                      multipleResponses[question.question]?.remove(option);
+                    }
+                  });
+                },
+              );
+            }),
+          ],
+        );
+      default:
+        return const Text('Unsupported question type');
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -210,25 +229,28 @@ class QuestionScreenState extends State<QuestionScreen> {
               padding: const EdgeInsets.all(8.0),
               child: buildQuestionWidget(questions[currentPage]),
             ),
-      bottomNavigationBar: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          if (currentPage > 0)
-            ElevatedButton(
-              onPressed: () => setState(() => currentPage--),
-              child: const Text('Previous'),
-            ),
-          if (currentPage < questions.length - 1)
-            ElevatedButton(
-              onPressed: () => setState(() => currentPage++),
-              child: const Text('Next'),
-            ),
-          if (currentPage == questions.length - 1)
-            ElevatedButton(
-              onPressed: submitResponses,
-              child: const Text('Submit'),
-            ),
-        ],
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            if (currentPage > 0)
+              ElevatedButton(
+                onPressed: () => setState(() => currentPage--),
+                child: const Text('Previous'),
+              ),
+            if (currentPage < questions.length - 1)
+              ElevatedButton(
+                onPressed: () => setState(() => currentPage++),
+                child: const Text('Next'),
+              ),
+            if (currentPage == questions.length - 1)
+              ElevatedButton(
+                onPressed: submitResponses,
+                child: const Text('Submit'),
+              ),
+          ],
+        ),
       ),
     );
   }
