@@ -3,4 +3,5 @@ class ResponseResult {
   final String message;
 
   ResponseResult({required this.success, required this.message});
+  
 }

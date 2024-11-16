@@ -34,24 +34,43 @@ class ApiService {
   }
 
   // Submit responses to the server
-  Future<ResponseResult> submitResponses(Map<String, Object> answers) async {
+ Future<ResponseResult> submitResponses(Map<String, Object?> answers) async {
+  logger.info("Submitting responses: ${jsonEncode(answers)}");
+
+  try {
+    // Log the payload being sent
+    print("Payload being sent: ${jsonEncode(answers)}");
+
+    // Make the POST request
     final response = await http.post(
       Uri.parse('$baseUrl/api/responses'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(answers),
+      body: jsonEncode(answers), 
     );
+
+    // Log the response status and body
     logger.info("Response status: ${response.statusCode}");
     logger.info("Response body: ${response.body}");
 
     if (response.statusCode == 201) {
+      // Successful response
       return ResponseResult(success: true, message: 'Responses submitted successfully!');
     } else {
+      // Handle error responses
       final errorMessage = response.body.isNotEmpty
           ? jsonDecode(response.body)['message'] ?? 'Failed to submit response'
           : 'Failed to submit response';
+      logger.severe("Submission failed: $errorMessage");
       return ResponseResult(success: false, message: errorMessage);
     }
+  } catch (e) {
+    // Handle exceptions
+    logger.severe("Submission error: $e");
+    return ResponseResult(success: false, message: 'An error occurred during submission.');
   }
+}
+
+
 
   // Fetch certificates from the server
   Future<List<dynamic>> fetchCertificates() async {

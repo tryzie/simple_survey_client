@@ -11,7 +11,7 @@ class Question {
     required this.question,
     required this.type,
     this.options,
-    this.description, // Include description in constructor
+    this.description, 
     this.subfields,
   });
 
@@ -20,7 +20,7 @@ class Question {
       id: json['id'],
       question: json['question'],
       type: json['type'],
-      description: json['description'], // Map description from JSON
+      description: json['description'], 
       options: json['options'] is String
           ? (json['options'] as String).split(',')
           : (json['options'] as List<dynamic>?)?.cast<String>(),

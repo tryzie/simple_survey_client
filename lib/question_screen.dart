@@ -53,7 +53,7 @@ class QuestionScreenState extends State<QuestionScreen> {
     final responses = {
       'textResponses': textResponses,
       'compositeResponses': compositeResponses,
-      'email': emailController.text,
+      'email_address': emailController.text,
       'singleResponses': singleResponses,
       'multipleResponses': multipleResponses,
     };
