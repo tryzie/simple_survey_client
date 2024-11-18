@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:logging/logging.dart';
 import 'package:sky_survey/model/question.dart';
+import 'package:sky_survey/thank_you_screen.dart';
 import 'api_service.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:convert';
 
 class QuestionScreen extends StatefulWidget {
   const QuestionScreen({super.key});
@@ -19,6 +22,8 @@ class QuestionScreenState extends State<QuestionScreen> {
   Map<String, Map<String, String>> compositeResponses = {};
   Map<String, String?> singleResponses = {};
   Map<String, List<String>> multipleResponses = {};
+  Map<String, List<PlatformFile>> fileResponses = {};
+
 
   TextEditingController emailController = TextEditingController();
   bool isValidEmail = true;
@@ -49,34 +54,51 @@ class QuestionScreenState extends State<QuestionScreen> {
     }
   }
 
-  void submitResponses() async {
-    final responses = {
-      'textResponses': textResponses,
-      'compositeResponses': compositeResponses,
-      'email_address': emailController.text,
-      'singleResponses': singleResponses,
-      'multipleResponses': multipleResponses,
-    };
+ void submitResponses() async {
+  // Prepare the responses payload
+  final responses = {
+    'textResponses': textResponses,
+    'compositeResponses': compositeResponses,
+    'email_address': emailController.text,
+    'singleResponses': singleResponses,
+    'multipleResponses': multipleResponses,
+    'fileResponses': fileResponses, 
+  };
 
-    if (!isValidEmail) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please correct invalid email")),
-      );
-      return;
-    }
-
-    try {
-      final response = await ApiService().submitResponses(responses);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(response.success ? response.message : 'Submission failed')),
-      );
-    } catch (error) {
-      logger.severe('Submission error: $error');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error submitting responses: $error")),
-      );
-    }
+  if (!isValidEmail) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Please correct invalid email")),
+    );
+    return;
   }
+
+  try {
+    // Log the payload for debugging purposes
+    logger.info("Submitting responses: ${jsonEncode(responses)}");
+
+    final response = await ApiService().submitResponses(responses);
+
+    if (response.success) {
+      // Navigate to the Thank You screen on success
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const ThankYouScreen()),
+      );
+    } else {
+      // Show error message from the server response
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(response.message)),
+      );
+    }
+  } catch (error) {
+    // Log the error and show an error message to the user
+    logger.severe('Submission error: $error');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Error submitting responses: $error")),
+    );
+  }
+}
+
 
   Widget buildQuestionWidget(Question question) {
     final questionText = question.description ?? question.question;
@@ -214,10 +236,95 @@ class QuestionScreenState extends State<QuestionScreen> {
             }),
           ],
         );
+        case 'file':
+      final fileProps = question.fileProperties ?? {};
+      final allowedFormat = fileProps['format'] ?? 'any format';
+      final maxSize = fileProps['max_file_size'] ?? 'unknown';
+      final maxUnit = fileProps['max_file_size_unit'] ?? '';
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            questionText,
+            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 10),
+          ElevatedButton(
+            onPressed: () async {
+              final result = await FilePicker.platform.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: [allowedFormat.replaceAll('.', '')],
+              );
+
+              if (result != null && result.files.isNotEmpty) {
+                final file = result.files.first;
+                final fileSizeInMB = file.size / (1024 * 1024);
+
+                if (fileSizeInMB > maxSize) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                          'File exceeds the maximum size of $maxSize $maxUnit'),
+                    ),
+                  );
+                  return;
+                }
+
+                // Process the selected file
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('File selected successfully')),
+                );
+              }
+            },
+            child: const Text('Upload File'),
+          ),
+        ],
+      );
       default:
         return const Text('Unsupported question type');
     }
   }
+
+ 
+
+Widget buildFileInput(Question question) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        question.description ?? question.question,
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+      ),
+      const SizedBox(height: 10),
+      ElevatedButton(
+        onPressed: () async {
+          FilePickerResult? result = await FilePicker.platform.pickFiles(
+            type: FileType.custom,
+            allowedExtensions: ['pdf'],
+           
+           
+          );
+
+          if (result != null) {
+            // Store selected files for submission
+            setState(() {
+              fileResponses[question.question] = result.files;
+            });
+          }
+        },
+        child: const Text('Upload Files'),
+      ),
+      if (fileResponses[question.question] != null)
+        Column(
+          children: fileResponses[question.question]!
+              .map((file) => Text(file.name))
+              .toList(),
+        ),
+    ],
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {

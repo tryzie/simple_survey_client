@@ -5,6 +5,7 @@ class Question {
   final List<String>? options;
   final String? description;
   final String? subfields;
+  final Map <String, dynamic>? fileProperties;
 
   Question({
     required this.id,
@@ -13,6 +14,7 @@ class Question {
     this.options,
     this.description, 
     this.subfields,
+    this.fileProperties,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class Question {
           ? (json['options'] as String).split(',')
           : (json['options'] as List<dynamic>?)?.cast<String>(),
       subfields: json['subfields'],
+      fileProperties: json['file_properties'],
     );
   }
 }
