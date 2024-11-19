@@ -27,7 +27,7 @@ class ThankYouScreen extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Return to the previous screen or home
+                Navigator.pop(context); // Return to home
               },
               child: const Text('Done'),
             ),

@@ -5,14 +5,14 @@ class Question {
   final List<String>? options;
   final String? description;
   final String? subfields;
-  final Map <String, dynamic>? fileProperties;
+  final Map<String, dynamic>? fileProperties;
 
   Question({
     required this.id,
     required this.question,
     required this.type,
     this.options,
-    this.description, 
+    this.description,
     this.subfields,
     this.fileProperties,
   });
@@ -22,7 +22,7 @@ class Question {
       id: json['id'],
       question: json['question'],
       type: json['type'],
-      description: json['description'], 
+      description: json['description'],
       options: json['options'] is String
           ? (json['options'] as String).split(',')
           : (json['options'] as List<dynamic>?)?.cast<String>(),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'question_screen.dart';
+import 'package:sky_survey/home_screen.dart';
 import 'logger.dart';
 
 void main() {
@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const QuestionScreen(),
+      home: const HomeScreen(),
     );
   }
 }

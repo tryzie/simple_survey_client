@@ -73,13 +73,12 @@ class QuestionScreenState extends State<QuestionScreen> {
   }
 
   try {
-    // Log the payload for debugging purposes
+    
     logger.info("Submitting responses: ${jsonEncode(responses)}");
 
     final response = await ApiService().submitResponses(responses);
 
     if (response.success) {
-      // Navigate to the Thank You screen on success
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const ThankYouScreen()),
@@ -270,8 +269,6 @@ class QuestionScreenState extends State<QuestionScreen> {
                   );
                   return;
                 }
-
-                // Process the selected file
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('File selected successfully')),
                 );
@@ -302,12 +299,10 @@ Widget buildFileInput(Question question) {
           FilePickerResult? result = await FilePicker.platform.pickFiles(
             type: FileType.custom,
             allowedExtensions: ['pdf'],
-           
-           
           );
 
           if (result != null) {
-            // Store selected files for submission
+            
             setState(() {
               fileResponses[question.question] = result.files;
             });

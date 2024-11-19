@@ -5,3 +5,4 @@ class ResponseResult {
   ResponseResult({required this.success, required this.message});
   
 }
+

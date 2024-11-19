@@ -34,21 +34,20 @@ class ApiService {
   }
 
   // Submit responses to the server
- Future<ResponseResult> submitResponses(Map<String, Object?> answers) async {
+Future<ResponseResult> submitResponses(Map<String, dynamic> answers) async {
   logger.info("Submitting responses: ${jsonEncode(answers)}");
 
   try {
-    // Log the payload being sent
     print("Payload being sent: ${jsonEncode(answers)}");
 
-    // Make the POST request
+    final Uri url = Uri.parse('$baseUrl/api/responses');
+
     final response = await http.post(
-      Uri.parse('$baseUrl/api/responses'),
+      url,
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(answers), 
     );
 
-    // Log the response status and body
     logger.info("Response status: ${response.statusCode}");
     logger.info("Response body: ${response.body}");
 
@@ -60,6 +59,7 @@ class ApiService {
       final errorMessage = response.body.isNotEmpty
           ? jsonDecode(response.body)['message'] ?? 'Failed to submit response'
           : 'Failed to submit response';
+
       logger.severe("Submission failed: $errorMessage");
       return ResponseResult(success: false, message: errorMessage);
     }
@@ -69,7 +69,6 @@ class ApiService {
     return ResponseResult(success: false, message: 'An error occurred during submission.');
   }
 }
-
 
 
   // Fetch certificates from the server
