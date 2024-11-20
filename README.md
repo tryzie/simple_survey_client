@@ -19,3 +19,5 @@ samples, guidance on mobile development, and a full API reference.
 # simple_survey_client
 This is the user interface of the sky_survey
 >>>>>>> 3f30ed773f5346dc910b838974c33379863f79ba
+
+For the app to run on your mobile device ensure that you have changed the IP address in the api_service file and the survey_response file to match your IP address
